@@ -1,0 +1,58 @@
+Airport,Date,State Holiday,State
+ATL,2012-04-23,Confederate Memorial Day,Georgie
+ATL,2012-11-25,Robert E Lee's Birthday,Georgie
+BOS,2012-03-16,Evacuation Day observed,Massachussets
+BOS,2012-04-16,Patriot's Day,Massachussets
+BOS,2012-06-17,Bunker Hill Day,Massachussets
+BOS,2012-06-18,Bunker Hill Day observed,Massachussets
+CLT,2012-05-10,State Holiday,Caroline du Nord
+DFW,2011-09-29,Rosh Hashana,Texas
+DFW,2011-10-08,Yom Kippur,Texas
+DFW,2011-12-24,Christmas Eve,Texas
+DFW,2012-01-19,State Holiday,Texas
+DFW,2012-03-02,Texas Independance Day,Texas
+DFW,2012-06-19,Emancipation Day,Texas
+DFW,2012-08-27,Lyndon Baines Johnson Day,Texas
+DFW,2012-09-17,Rosh Hashana,Texas
+DFW,2012-09-26,Yom Kippur,Texas
+DFW,2012-12-24,Christmas Eve,Texas
+DFW,2012-12-26,Day after Christmas Day,Texas
+DFW,2013-01-19,State Holiday,Texas
+DFW,2013-03-02,Texas Independance Day,Texas
+IAH,2011-09-29,Rosh Hashana,Texas
+IAH,2011-10-08,Yom Kippur,Texas
+IAH,2011-12-24,Christmas Eve,Texas
+IAH,2012-01-19,State Holiday,Texas
+IAH,2012-03-02,Texas Independance Day,Texas
+IAH,2012-06-19,Emancipation Day,Texas
+IAH,2012-08-27,Lyndon Baines Johnson Day,Texas
+IAH,2012-09-17,Rosh Hashana,Texas
+IAH,2012-09-26,Yom Kippur,Texas
+IAH,2012-12-24,Christmas Eve,Texas
+IAH,2012-12-26,Day after Christmas Day,Texas
+IAH,2013-01-19,State Holiday,Texas
+IAH,2013-03-02,Texas Independance Day,Texas
+JFK,2012-02-12,Lincoln's Birthday,New-York
+JFK,2012-02-13,Lincoln's Birthday observed,New-York
+JFK,2013-02-12,Lincoln's Birthday,New-York
+LAS,2011-10-28,Nevada Day,Nevada
+LAS,2012-10-26,Nevada Day,Nevada
+LAX,2011-09-09,California Admission Day,Californie
+LAX,2011-09-23,Native Americans' Day,Californie
+LAX,2012-03-31,Cesar Chavez Day,Californie
+LGA,2012-02-12,Lincoln's Birthday,New-York
+LGA,2012-02-13,Lincoln's Birthday observed,New-York
+LGA,2013-02-12,Lincoln's Birthday,New-York
+MCO,2012-01-19,State Holiday,Floride
+MCO,2012-04-23,Confederate Memorial Day,Floride
+MIA,2012-01-19,State Holiday,Floride
+MIA,2012-04-23,Confederate Memorial Day,Floride
+ORD,2012-02-12,Lincoln's Birthday,Illinois
+ORD,2012-02-13,Lincoln's Birthday observed,Illinois
+ORD,2012-03-05,Casimir Pulaski Day,Illinois
+ORD,2012-11-06,Election Day ,Illinois
+ORD,2013-02-12,Lincoln's Birthday,Illinois
+ORD,2013-03-04,Casimir Pulaski Day,Illinois
+SFO,2011-09-09,California Admission Day,Californie
+SFO,2011-09-23,Native Americans' Day,Californie
+SFO,2012-03-31,Cesar Chavez Day,Californie
