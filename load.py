@@ -1,3 +1,5 @@
+#!/usr/bin/python -W ignore::DeprecationWarning
+
 # -*- coding: utf-8 -*-
 """
 Created on Fri Nov 18 19:16:05 2016
@@ -5,6 +7,8 @@ Created on Fri Nov 18 19:16:05 2016
 @author: juan
 """
 
+
+from xgboost import XGBRegressor
 from time import time
 import numpy as np
 import pandas as pd
@@ -28,15 +32,15 @@ def report(results, n_top=1000):
 
             print(msg)
 
-
-
 #%%  public data
 
 # 
 data_train = pd.read_csv("data/public_train.csv", 
                          parse_dates=['DateOfDeparture'], date_parser=dateparse)
 
-#%% competitors data
+data_ = data_train
+
+##%% competitors data
 data_competitors = pd.read_csv("data/Competitors1.csv", 
                                names=["Id", "Departure", "Arrival", "Airline", 
                                "Competitors", "Codeshare"], 
@@ -51,7 +55,7 @@ data_competitors = data_competitors.drop([
     #"Codeshare"
     ], axis=1)
 
-data_ = pd.merge(data_train, data_competitors, 
+data_ = pd.merge(data_, data_competitors, 
                  how='left', 
                  left_on=['Departure', 'Arrival'], 
                  right_on=['Departure','Arrival'])
@@ -103,7 +107,6 @@ data_weather = data_weather.drop([
     'WindDirDegrees'
     ], axis=1)
 
-# TODO Correct name of temperatures
 data_ = pd.merge(data_, data_weather, 
                  how='left', 
                  left_on=['DateOfDeparture', 'Departure'], 
@@ -117,37 +120,6 @@ data_ = pd.merge(data_, data_weather,
                  right_on=['Date', 'AirPort'])
 data_ = data_.drop(['Date', 'AirPort'], axis=1)
 data_ = data_.rename(columns={'Max TemperatureC': 'max_temp_Arrival'})
-
-#%% runways
-#"id","airport_ref","airport_ident","length_ft","width_ft","surface","lighted","closed","le_ident","le_latitude_deg","le_longitude_deg","le_elevation_ft","le_heading_degT","le_displaced_threshold_ft","he_ident","he_latitude_deg","he_longitude_deg","he_elevation_ft","he_heading_degT","he_displaced_threshold_ft" 
-#data_runway = pd.read_csv("data/runway.csv")
-#data_runway = data_runway.drop([
-#    "id",
-#    #"airport_ref",
-#    "airport_ident",
-#    "length_ft",
-#    "width_ft",
-#    #"surface",
-#    "lighted",
-#    "closed",
-#    "le_ident",
-#    "le_latitude_deg",
-#    "le_longitude_deg",
-#    "le_elevation_ft",
-#    "le_heading_degT",
-#    "le_displaced_threshold_ft",
-#    "he_ident",
-#    "he_latitude_deg",
-#    "he_longitude_deg",
-#    "he_elevation_ft",
-#    "he_heading_degT",
-#    "he_displaced_threshold_ft" 
-#    ], axis=1)
-#
-#data_ = pd.merge(data_, data_runway, 
-#                 how='left', 
-#                 left_on=['DateOfDeparture', 'Departure'], 
-#                 right_on=['Date', 'AirPort'])
 
 #%% price jet fuel
 #Date,price
@@ -180,15 +152,16 @@ data_encoded['week'] = data_encoded['DateOfDeparture'].dt.week
 data_encoded['n_days'] = data_encoded['DateOfDeparture'].apply(lambda date: (date - pd.to_datetime("1970-01-01")).days)
 
 data_encoded = data_encoded.join(pd.get_dummies(data_encoded['year'], prefix='y'))
-data_encoded = data_encoded.join(pd.get_dummies(data_encoded['month'], prefix='m'))
-data_encoded = data_encoded.join(pd.get_dummies(data_encoded['day'], prefix='d'))
+#data_encoded = data_encoded.join(pd.get_dummies(data_encoded['month'], prefix='m'))
+#data_encoded = data_encoded.join(pd.get_dummies(data_encoded['day'], prefix='d'))
 data_encoded = data_encoded.join(pd.get_dummies(data_encoded['weekday'], prefix='wd'))
 data_encoded = data_encoded.join(pd.get_dummies(data_encoded['week'], prefix='w'))
 
 #  A linear regressor baseline
+drops = ['DateOfDeparture', 'log_PAX' ]#, 'month', 'day', 'weekday', 'week', 'n_days' ]
 
-features = data_encoded.drop(['log_PAX','DateOfDeparture'], axis=1)
-X_columns = data_encoded.columns.drop(['log_PAX','DateOfDeparture'])
+features = data_encoded.drop(drops, axis=1)
+X_columns = data_encoded.columns.drop(drops)
 X = features.values
 y = data_encoded['log_PAX'].values
 
@@ -196,55 +169,22 @@ y = data_encoded['log_PAX'].values
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=0)
 
-## linear
-#reg = LinearRegression()
-#
-#scores = cross_val_score(reg, X_train, y_train, cv=5, scoring='mean_squared_error')
-#print("log RMSE: {:.4f} +/-{:.4f}".format(
-#    np.mean(np.sqrt(-scores)), np.std(np.sqrt(-scores))))
-
 #%%
 
-#initial run
-n_estimators = 40
-max_depth = 60
-max_features = 60
-
-reg = RandomForestRegressor(n_estimators=n_estimators, 
-                            max_depth=max_depth, 
-                            max_features=max_features)
-
-if multiprocessing.cpu_count() < 40:
-    #scores = cross_val_score(reg, X_train, y_train, cv=5, scoring='neg_mean_squared_error',n_jobs=3)
-    #print("log RMSE: {:.4f} +/-{:.4f}".format(np.mean(np.sqrt(-scores)), np.std(np.sqrt(-scores))))
-    param_grid = {"n_estimators": range(20, 100, 40),
-            "max_depth": range(20, 100, 40),
-            "max_features": range(20, 100, 40)} 
-
-    # run grid search                                           
-    grid_search = GridSearchCV(reg, param_grid=param_grid, n_jobs=2, verbose=1)      
-    start = time()                                              
-    grid_search.fit(X_train, y_train)                                       
-    print("GridSearchCV took %.2f seconds for %d candidate parameter settings."
-          % (time() - start, len(grid_search.cv_results_['params'])))
-    report(grid_search.cv_results_)
-
-
-else:
-    # grid search parameters
-    param_grid = {"n_estimators": range(20,100, 5),                       
-                  "max_depth": range(20, 100, 5),                   
-                  "max_features": range(20, 100, 5)}             
-
-    # run grid search                                           
-    grid_search = GridSearchCV(reg, param_grid=param_grid, n_jobs=40, verbose=1)      
-    start = time()                                              
-    grid_search.fit(X_train, y_train)                                       
-    print("GridSearchCV took %.2f seconds for %d candidate parameter settings."
-          % (time() - start, len(grid_search.cv_results_['params'])))
-    report(grid_search.cv_results_)
-
-
+#####initial run
+#n_estimators = 85
+#max_depth = 65
+#max_features = 65
+#reg = RandomForestRegressor(n_estimators=n_estimators, 
+#                            max_depth=max_depth, 
+#                            max_features=max_features)
+#
+#scores = cross_val_score(reg, X_train, y_train, cv=5, scoring='neg_mean_squared_error',n_jobs=3)
+#print("log RMSE: {:.4f} +/-{:.4f}".format(np.mean(np.sqrt(-scores)), np.std(np.sqrt(-scores))))
+#aram_grid = {"n_estimators": range(20, 100, 40),
+#       "max_depth": range(20, 100, 40),
+#       "max_features": range(20, 100, 40)} 
+#
 #reg.fit(X_train, y_train)
 #plt.figure(figsize=(15, 5))
 #ordering = np.argsort(reg.feature_importances_)[::-1][:50]
@@ -253,60 +193,80 @@ else:
 #x = np.arange(len(feature_names))
 #plt.bar(x, importances)
 #plt.xticks(x + 0.5, feature_names, rotation=90, fontsize=15);
+#plt.show()
+#plt.savefig('test.png')
 
-##%% adaboost
-#max_depth = 5 # tree depth
-#n_trees = 200 # number of trees
-#max_features = None # number of random features at each cut
-#n_samples = X_train.shape[0]
-#w = np.ones(n_samples) / n_samples
-#
-#training_errors = []
-#test_errors = []
-#models = []
-#alphas = []
-#training_errors_h = []
-#ts = plt.arange(n_trees)
-#
-#for t in range(n_trees):
-#    # Your code should go here
-#    clf = DecisionTreeClassifier(
-#        max_depth=max_depth, max_features=max_features)
-#    clf.fit(X_train, y_train, sample_weight=w)
-#    y_pred = clf.predict(X_train)
-#    training_error_h = np.mean(y_pred != y_train)
-#    training_errors_h.append(training_error_h)
-#    gamma = np.sum(w * y_train * y_pred)
-#    #print gamma
-#    alpha = 0.5 * np.log((1. + gamma) / (1. - gamma))
-#    alphas.append(alpha)
-#    models.append(clf)
-#    
-#    # udpate weights
-#    good = (y_pred == y_train)
-#    w[good] *= 1. / (1. + gamma)
-#    w[~good] *= 1. / (1. - gamma)
-#    
-#    y_disc_train_global = sum(
-#        alpha * clf.predict(X_train) for alpha, clf in zip(alphas, models))
-#    y_disc_test_global = sum(
-#        alpha * clf.predict(X_test) for alpha, clf in zip(alphas, models))
-#    
-#    y_pred_train_global = np.sign(y_disc_train_global)
-#    y_pred_test_global = np.sign(y_disc_test_global)
-#    
-#    training_error = np.mean(y_pred_train_global != y_train)
-#    test_error = np.mean(y_pred_test_global != y_test)
-#
-#    training_errors.append(training_error)
-#    test_errors.append(test_error)
-#    
-#    plt.clf()
-#    plt.plot(ts[:t+1], training_errors[:t+1], c='b')
-#    plt.plot(ts[:t+1], test_errors[:t+1], c='r')
-#    display.clear_output(wait=True)
-#    display.display(plt.gcf())
-#    sleep(.001)
+
+###if multiprocessing.cpu_count() < 40:
+###    #scores = cross_val_score(reg, X_train, y_train, cv=5, scoring='neg_mean_squared_error',n_jobs=3)
+###    #print("log RMSE: {:.4f} +/-{:.4f}".format(np.mean(np.sqrt(-scores)), np.std(np.sqrt(-scores))))
+###    param_grid = {"n_estimators": range(20, 100, 40),
+###            "max_depth": range(20, 100, 40),
+###            "max_features": range(20, 100, 40)} 
+###
+###    # run grid search                                           
+###    grid_search = GridSearchCV(reg, param_grid=param_grid, n_jobs=2, verbose=1)      
+###    start = time()                                              
+###    grid_search.fit(X_train, y_train)                                       
+###    print("GridSearchCV took %.2f seconds for %d candidate parameter settings."
+###          % (time() - start, len(grid_search.cv_results_['params'])))
+###    report(grid_search.cv_results_)
+###
+###
+###else:
+###    # grid search parameters
+###    param_grid = {"n_estimators": range(20,100, 5),                       
+###                  "max_depth": range(20, 100, 5),                   
+###                  "max_features": range(20, 100, 5)}             
+###
+###    # run grid search                                           
+###    grid_search = GridSearchCV(reg, param_grid=param_grid, n_jobs=40, verbose=1)      
+###    start = time()                                              
+###    grid_search.fit(X_train, y_train)                                       
+###    print("GridSearchCV took %.2f seconds for %d candidate parameter settings."
+###          % (time() - start, len(grid_search.cv_results_['params'])))
+###    report(grid_search.cv_results_)
+
+
+##### xgboost
+max_depth=50
+learning_rate=0.2
+n_estimators=60
+
+reg = XGBRegressor(max_depth=max_depth, 
+        learning_rate=learning_rate, 
+        n_estimators=n_estimators,
+        nthread=1)
+
+# grid search parameters
+param_grid = {"max_depth": range(20,100, 10),                       
+              "n_estimators": range(20, 100, 10),                   
+              "learning_rate": [0.1, 0.2, 0.3, 0.4]}             
+
+# run grid search                                           
+grid_search = GridSearchCV(reg, param_grid=param_grid, n_jobs=2, verbose=1)      
+start = time()                                              
+grid_search.fit(X_train, y_train)                                       
+print("GridSearchCV took %.2f seconds for %d candidate parameter settings."
+      % (time() - start, len(grid_search.cv_results_['params'])))
+report(grid_search.cv_results_)
+
+
+
+#scores = cross_val_score(reg, X_train, y_train, cv=5, scoring='mean_squared_error')  
+#print("log RMSE: {:.4f} +/-{:.4f}".format(                                           
+#    np.mean(np.sqrt(-scores)), np.std(np.sqrt(-scores))))                            
+                                                                                      
+                                                                                      
+
+
+
+
+
+
+
+
+
 
 
 
