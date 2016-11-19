@@ -5,6 +5,7 @@ Created on Fri Nov 18 19:16:05 2016
 @author: juan
 """
 
+from time import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -13,9 +14,19 @@ from sklearn.cross_validation import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.cross_validation import cross_val_score
 from sklearn.ensemble import RandomForestRegressor
-
+from sklearn.model_selection import GridSearchCV
 
 dateparse = lambda x: pd.datetime.strptime(x, '%Y-%m-%d')
+
+def report(results, n_top=3):
+    for i in range(1, n_top + 1):
+        candidates = np.flatnonzero(results['rank_test_score'] == i)
+        for candidate in candidates:
+            msg = "Model with rank: {} Mean validation score: {:.3f} (std: {:.3f}) Parameters: {} ".format(i, results['mean_test_score'][candidate], results['std_test_score'][candidate], results['params'][candidate])
+
+            print(msg)
+
+
 
 #%%  public data
 
@@ -34,8 +45,8 @@ data_competitors = data_competitors.drop([
     #"Departure",
     #"Arrival",
     "Airline",
-    "Competitors",
-    "Codeshare"
+    #"Competitors",
+    #"Codeshare"
     ], axis=1)
 
 data_ = pd.merge(data_train, data_competitors, 
@@ -191,15 +202,33 @@ X_train, X_test, y_train, y_test = train_test_split(
 #    np.mean(np.sqrt(-scores)), np.std(np.sqrt(-scores))))
 
 #%%
+
 n_estimators = 40
 max_depth = 60
 max_features = 60
 
-reg = RandomForestRegressor(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features)
-scores = cross_val_score(reg, X_train, y_train, cv=5, scoring='mean_squared_error',n_jobs=3)
-print("log RMSE: {:.4f} +/-{:.4f}".format(
-    np.mean(np.sqrt(-scores)), np.std(np.sqrt(-scores))))
+reg = RandomForestRegressor(n_estimators=n_estimators, 
+                            max_depth=max_depth, 
+                            max_features=max_features)
+#scores = cross_val_score(reg, X_train, y_train, cv=5, scoring='neg_mean_squared_error',n_jobs=3)
+#print("log RMSE: {:.4f} +/-{:.4f}".format(
+#    np.mean(np.sqrt(-scores)), np.std(np.sqrt(-scores))))
     
+# grid search parameters
+param_grid = {"n_estimators": range(10,100, 5),                       
+              "max_depth": range(10, 100, 5),                   
+              "max_features": range(10, 100, 5)}             
+                                                            
+# run grid search                                           
+grid_search = GridSearchCV(reg, param_grid=param_grid, n_jobs=3)      
+start = time()                                              
+grid_search.fit(X_train, y_train)                                       
+                                                            
+print("GridSearchCV took %.2f seconds for %d candidate parameter settings."
+      % (time() - start, len(grid_search.cv_results_['params'])))
+report(grid_search.cv_results_)
+
+
 #reg.fit(X_train, y_train)
 #plt.figure(figsize=(15, 5))
 #ordering = np.argsort(reg.feature_importances_)[::-1][:50]
